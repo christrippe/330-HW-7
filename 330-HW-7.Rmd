@@ -1,0 +1,38 @@
+---
+title: "330-HW-7"
+author: "Chris Trippe"
+date: "11/27/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, message = FALSE, echo = FALSE}
+library(tidyverse)
+library(MASS)
+library(lmtest)
+library(bestglm)
+library(GGally)
+library(car)
+library(ggcorrplot)
+library(kableExtra)
+```
+
+1. In your own words, summarize the overarching problem. Discuss how statistical modeling will be able to answer the posed questions.
+
+2. Explore the data using basic exploratory graphics and summary statistics. Include scatterplots with smooth curves to show the relationship between 2 covariates and the response (diabetes). Comment on any potential relationships you see through this exploratory analysis. Explain why traditional multiple linear regression methods are not suitable for this problem.
+
+3. Use variable selection to choose which variables to use in a logistic regression model for diabetes. Provide a justification of your choice in criteria (AIC or BIC) and algorithm (forward vs. backward vs. exhaustive). What factors do you find are important in explaining the presence of diabetes?
+
+4. Write out a logistic regression model (using greek letters) that includes your chosen covariates. Describe and justify any assumptions that you use in writing out your model.
+
+5. Fit the corresponding logistic regression model and give a 95% confidence interval for each effect therein. Interpret at least one (but not the intercept) of these intervals in the context of the problem.
+
+6. Determine an appropriate threshold for classification that minimizes the misclassification rate. Provide an appropriate plot showing that this is indeed the minimum.
+
+7. Assess the model fit by build a confusion matrix from all the data (i.e. not cross-validated) using the classification threshold that you found in the previous problem, report the pseudo-R2 and AUC for your logistic regression model. Comment on how well your model fits the data by its ability to correctly classify patients in the dataset. State your results in terms of sensitivity, specificity, positive predictive value and negative predictive value.
+
+8. Assess the predictive ability of your model by running a cross-validation study where you classify the “test” patients using the threshold you found above. Report your results in terms of the average sensitivity, specificity, positive predictive value and negative predictive value for the test sets.
+
+9. Predict the probability of diabetes for the following patient: pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268 and age= 25. Do you think patient has diabetes? Why or why not?
