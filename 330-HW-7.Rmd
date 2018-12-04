@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 ```{r, message = FALSE, echo = FALSE}
 library(tidyverse)
@@ -19,15 +19,43 @@ library(ggcorrplot)
 library(kableExtra)
 ```
 
+```{r}
+#data clean-up
+diabetes_data <- read_table2("diabetes.txt")
+diabetes_clean <- filter(diabetes_data, bmi != 0)
+diabetes_clean <- as.data.frame(diabetes_clean)
+```
+
+
 1. In your own words, summarize the overarching problem. Discuss how statistical modeling will be able to answer the posed questions.
 
 2. Explore the data using basic exploratory graphics and summary statistics. Include scatterplots with smooth curves to show the relationship between 2 covariates and the response (diabetes). Comment on any potential relationships you see through this exploratory analysis. Explain why traditional multiple linear regression methods are not suitable for this problem.
+```{r}
+ggplot(diabetes_clean,aes(age,diabetes)) + geom_jitter() + geom_smooth()
+
+```
+
 
 3. Use variable selection to choose which variables to use in a logistic regression model for diabetes. Provide a justification of your choice in criteria (AIC or BIC) and algorithm (forward vs. backward vs. exhaustive). What factors do you find are important in explaining the presence of diabetes?
 
+```{r}
+vs.res <- bestglm(diabetes_clean, IC = "AIC", family = binomial)
+
+best_slr <- vs.res$BestModel
+summary(best_slr)
+```
+
+
 4. Write out a logistic regression model (using greek letters) that includes your chosen covariates. Describe and justify any assumptions that you use in writing out your model.
 
+$$log(\frac{p_i}{1+p_i}) = \beta_0 + \beta_1(pregnant_i) + \beta_2(glucose_i) + \beta_3(diastolic_i) + \beta_4(insulin_i) +  \beta_5(bmi_i) + \beta_6(pedigree_i) +\beta_7(age_i) + \epsilon_{ip} \text{ where } \epsilon_i \sim \mathcal{N}(\mu,\,\sigma^{2})$$
+
 5. Fit the corresponding logistic regression model and give a 95% confidence interval for each effect therein. Interpret at least one (but not the intercept) of these intervals in the context of the problem.
+
+```{r}
+confint(best_slr)
+```
+
 
 6. Determine an appropriate threshold for classification that minimizes the misclassification rate. Provide an appropriate plot showing that this is indeed the minimum.
 
@@ -36,3 +64,9 @@ library(kableExtra)
 8. Assess the predictive ability of your model by running a cross-validation study where you classify the “test” patients using the threshold you found above. Report your results in terms of the average sensitivity, specificity, positive predictive value and negative predictive value for the test sets.
 
 9. Predict the probability of diabetes for the following patient: pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268 and age= 25. Do you think patient has diabetes? Why or why not?
+
+```{r}
+dframe <- data.frame( pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268, age= 25)
+predict.glm(best_slr,dframe)
+```
+
