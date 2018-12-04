@@ -197,7 +197,8 @@ mean(ppv)
 mean(npv)
 ```
 
-When running a cross validation on the data, we obtain a sensitivity value of `r round(mean(sens),4)`, a specitivity value of `r round(mean(spec), 4)`, a positive predictive value of `r round(mean(ppv),4)`, and a negative predictive value of `r round(mean(npv),4)`. 
+When running a cross validation on the data, we obtain a sensitivity value of `r round(mean(sens),4)`, a specitivity value of `r round(mean(spec), 4)`, a positive predictive value of `r round(mean(ppv),4)`, and a negative predictive value of `r round(mean(npv),4)`.
+something
 
 9. Predict the probability of diabetes for the following patient: pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268 and age= 25. Do you think patient has diabetes? Why or why not?
 
