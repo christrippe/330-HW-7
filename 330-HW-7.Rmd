@@ -17,37 +17,44 @@ library(GGally)
 library(car)
 library(ggcorrplot)
 library(kableExtra)
+library(gridExtra)
+library(pROC)
 ```
 
 ```{r, message = FALSE, echo = FALSE}
 #data clean-up
 diabetes_data <- read_table2("diabetes.txt")
-diabetes_clean <- filter(diabetes_data, bmi != 0)
-diabetes_clean <- as.data.frame(diabetes_clean)
+
+##Remove all rows where BMI = 0
+diabetes_bmi <- as.data.frame(filter(diabetes_data, bmi != 0))
+
+##Remove all rows where Insulin = 0
+diabetes_age <- as.data.frame(filter(diabetes_bmi, insulin != 0))
+
+##age 81 is an outlier. Delete and line for age is monotonic
+diabetes_clean <- diabetes_age[-which(diabetes_age$age == 81),]
+
 ```
 
 
 1. In your own words, summarize the overarching problem. Discuss how statistical modeling will be able to answer the posed questions.
 
 2. Explore the data using basic exploratory graphics and summary statistics. Include scatterplots with smooth curves to show the relationship between 2 covariates and the response (diabetes). Comment on any potential relationships you see through this exploratory analysis. Explain why traditional multiple linear regression methods are not suitable for this problem.
-```{r, echo = FALSE, fig.heigh = 3, fig.width = 3}
-ggplot(diabetes_clean,aes(pregnant,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
+```{r, echo = FALSE, message = FALSE}
+insulin_clean_plot <- ggplot(diabetes_clean,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
 
-ggplot(diabetes_clean,aes(glucose,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
+insulin_raw_plot <- ggplot(diabetes_data,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
 
-ggplot(diabetes_clean,aes(diastolic,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
+age_clean_plot <- ggplot(diabetes_clean,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
 
-ggplot(diabetes_clean,aes(triceps,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
+age_raw_plot <- ggplot(diabetes_data,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
 
-ggplot(diabetes_clean,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
-
-ggplot(diabetes_clean,aes(bmi,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
-
-ggplot(diabetes_clean,aes(pedigree,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
-
-ggplot(diabetes_clean,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(type = "lm")
+grid.arrange(insulin_raw_plot,insulin_clean_plot,nrow=1)
+grid.arrange(age_raw_plot,age_clean_plot,nrow=1)
 ```
 
+##Comment on what we did to improve data (exclude all insulin and bmi values of 0 as well as the outlier in age)
+##Does the new graphs look monotonic aka approximately always increasing as x-value increases?
 
 3. Use variable selection to choose which variables to use in a logistic regression model for diabetes. Provide a justification of your choice in criteria (AIC or BIC) and algorithm (forward vs. backward vs. exhaustive). What factors do you find are important in explaining the presence of diabetes?
 
@@ -64,7 +71,7 @@ ylab="AIC")
 
 4. Write out a logistic regression model (using greek letters) that includes your chosen covariates. Describe and justify any assumptions that you use in writing out your model.
 
-$$log(\frac{p_i}{1+p_i}) = \beta_0 + \beta_1(pregnant_i) + \beta_2(glucose_i) + \beta_3(diastolic_i) + \beta_4(insulin_i) +  \beta_5(bmi_i) + \beta_6(pedigree_i) +\beta_7(age_i) + \epsilon_{ip} \text{ where } \epsilon_i \sim \mathcal{N}(\mu,\,\sigma^{2})$$
+$$log(\frac{p_i}{1+p_i}) = \beta_0 + \beta_2(glucose_i) + \beta_5(bmi_i) + \beta_6(pedigree_i) +\beta_7(age_i) + \epsilon_{ip} \text{ where } \epsilon_i \sim \mathcal{N}(\mu,\,\sigma^{2})$$
 
 5. Fit the corresponding logistic regression model and give a 95% confidence interval for each effect therein. Interpret at least one (but not the intercept) of these intervals in the context of the problem.
 
@@ -74,11 +81,12 @@ exp(confint(best_slr)) ##times
 100*(exp(confint(best_slr))-1) ##percentage
 ```
 
+##put values in table. These conf.ints give beta, exp(beta), and 100*(exp(beta)-1). The last one is the recomended to interpret (percent more likely).
 
 6. Determine an appropriate threshold for classification that minimizes the misclassification rate. Provide an appropriate plot showing that this is indeed the minimum.
 
 ```{r, echo = FALSE}
-pred.probs <- predict.glm(slr_best, type = "response")
+pred.probs <- predict.glm(best_slr, type = "response")
 
 thresh <- seq(0,1, length = 100)
 
@@ -90,31 +98,113 @@ my.classification <- ifelse(pred.probs>thresh[i],1,0)
 # calculate the pct where my classification not eq truth
 misclass[i] <- mean(my.classification!=diabetes_clean$diabetes)
 }
-#Find threshold which minimizes miclassification
-min_thresh <- thresh[which.min(misclass)]
 
-plot(thresh, misclass)
+#Find threshold which minimizes miclassification
+cutoff <- thresh[which.min(misclass)]
+
+plot(thresh, misclass, pch = 19)
 ```
 
 
 7. Assess the model fit by build a confusion matrix from all the data (i.e. not cross-validated) using the classification threshold that you found in the previous problem, report the pseudo-R2 and AUC for your logistic regression model. Comment on how well your model fits the data by its ability to correctly classify patients in the dataset. State your results in terms of sensitivity, specificity, positive predictive value and negative predictive value.
 
 ```{r, echo = FALSE}
+## Use fitted model to predict
+pred.probs <- predict.glm(best_slr, type="response") #response gives probabilities
 
+## Classify according to threshold
+test.class <- ifelse(pred.probs>cutoff,1,0)
+
+## Create a confusion matrix
+conf.mat <- addmargins(table(factor(diabetes_clean$diabetes,levels=c(0,1)),factor(test.class,levels=c(0,1))))
+rownames(conf.mat) <- c("True No", "True Yes", "Sum")
+colnames(conf.mat) <- c("Pred No", "Pred Yes", "Sum")
+conf.mat
+
+SENS <- conf.mat[2,2]/conf.mat[2,3]
+SPEC <- conf.mat[1,1]/conf.mat[1,3]
+PPV <- conf.mat[2,2]/conf.mat[3,2]
+NPV <- conf.mat[1,1]/conf.mat[3,1]
+
+SENS
+SPEC
+PPV
+NPV
+
+##pseudo R^2
+r2 <- 1-best_slr$deviance/best_slr$null.deviance
+r2
+
+##AUC
+a.roc <- roc(diabetes_clean$diabetes,pred.probs)
+AUC <- auc(a.roc)
+
+plot(a.roc,legacy.axes=TRUE)
+abline(h = 0)
+abline(v = 0)
 ```
 
+According to our pseudo $R^2 $ value of `r round(r2,4)`, `r 100*round(r2,4)` percent of the variance in the log-odds of diabetes is explained away by the explanitory variables used in our model.
+
+As for the area under our Receiver Characteristic Operator curve, we obatin a value of `r AUC`. Normally, if we had to guess if someone had diabetes, it would be a 50/50 chance--either they have diabetes or they don't. An AUC (area under curve) value of `r AUC` means that any given person has a `r 100*AUC` percent chance of not having diabetes and a `r 100*(1-AUC)` percent chance of having diabetes, on average. 
+
+From the data, we obtain a sensitivity value of `r round(mean(SENS),4)`, a specitivity value of `r round(mean(SPEC), 4)`, a positive predictive value of `r round(mean(PPV),4)`, and a negative predictive value of `r round(mean(NPV),4)`. This means we correctly identified `r 100*round(mean(SENS),4)` percent of people that actually had diabetes and `r 100*round(mean(SPEC),4)` percent of people that did not have diabetes. Of those that we predicted to have diabetes, `r 100*round(mean(PPV),4)` actually had diabetes and of those that we predicted to not have diabetes, `r 100*round(mean(NPV),4)` percent of them did not actually have diabetes. These are all fairly high percentages which would allows us to conclude that this model fits the data well. The one concern is the sensitivity which would be better it if were a little higher. It's better that we over diagnose people with diabetes, so that the likelihood of those that do have diabetes test positive. 
 
 8. Assess the predictive ability of your model by running a cross-validation study where you classify the “test” patients using the threshold you found above. Report your results in terms of the average sensitivity, specificity, positive predictive value and negative predictive value for the test sets.
 
 ```{r, echo = FALSE}
+n.cv <- 500
+n.test <- round(.1*nrow(diabetes_clean))
 
+sens <- rep(NA,n.cv)
+spec <- rep(NA,n.cv)
+ppv <- rep(NA,n.cv)
+npv <- rep(NA,n.cv)
+auc <- rep(NA,n.cv)
+
+## Begin for loop
+for(cv in 1:n.cv){
+## Separate into test and training sets
+test.obs <- sample(nrow(diabetes_clean),n.test)
+test.set <- diabetes_clean[test.obs,]
+train.set <- diabetes_clean[-test.obs,]
+
+## Fit best model to training set
+train.model <- glm(diabetes~glucose+pedigree+age+bmi,data=train.set,family=binomial)
+
+## Use fitted model to predict test set
+pred.probs <- predict.glm(train.model, newdata=test.set, type="response") #response gives probabilities
+
+## Classify according to threshold
+test.class <- ifelse(pred.probs>cutoff,1,0)
+
+## Create a confusion matrix
+conf.mat <- addmargins(table(factor(test.set$diabetes,levels=c(0,1)),factor(test.class,levels=c(0,1))))
+
+## Pull of sensitivity, specificity, PPV and NPV
+## using bracket notation
+sens[cv] <- conf.mat[2,2]/conf.mat[2,3]
+spec[cv] <- conf.mat[1,1]/conf.mat[1,3]
+ppv[cv] <- conf.mat[2,2]/conf.mat[3,2]
+npv[cv] <- conf.mat[1,1]/conf.mat[3,1]
+## Calculate AUC
+auc[cv] <- auc(roc(test.set$diabetes,pred.probs))
+} #End for-loop
+
+mean(sens)
+mean(spec)
+mean(ppv)
+mean(npv)
 ```
 
+When running a cross validation on the data, we obtain a sensitivity value of `r round(mean(sens),4)`, a specitivity value of `r round(mean(spec), 4)`, a positive predictive value of `r round(mean(ppv),4)`, and a negative predictive value of `r round(mean(npv),4)`. 
 
 9. Predict the probability of diabetes for the following patient: pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268 and age= 25. Do you think patient has diabetes? Why or why not?
 
 ```{r, echo = FALSE}
-dframe <- data.frame( pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268, age= 25)
-predict.glm(best_slr,dframe, interval = "prediction")
+dframe <- data.frame( glucose= 90, bmi= 25.1, pedigree= 1.268, age= 25)
+pred.val <- predict.glm(best_slr,dframe, interval = "prediction", type = "response")
+
 ```
 
+When using our model to predict whether or not a person with glucose = 90, bmi = 25.1, pedigree = 1.268, and age = 25, we obtain a value of `r pred.val`. Our calculated cutoff value is `r cutoff` which is greater than `r pred.val`. Therefore, we conclude that a person with these particular traits would not have diabetes. 
