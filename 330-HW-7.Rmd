@@ -41,13 +41,13 @@ diabetes_clean <- diabetes_age[-which(diabetes_age$age == 81),]
 
 2. Explore the data using basic exploratory graphics and summary statistics. Include scatterplots with smooth curves to show the relationship between 2 covariates and the response (diabetes). Comment on any potential relationships you see through this exploratory analysis. Explain why traditional multiple linear regression methods are not suitable for this problem.
 ```{r, echo = FALSE, message = FALSE}
-insulin_clean_plot <- ggplot(diabetes_clean,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
+insulin_clean_plot <- ggplot(diabetes_clean,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE) + ggtitle("Clean Data: Insulin")
 
-insulin_raw_plot <- ggplot(diabetes_data,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
+insulin_raw_plot <- ggplot(diabetes_data,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE) + ggtitle("Raw Data: Insulin")
 
-age_clean_plot <- ggplot(diabetes_clean,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
+age_clean_plot <- ggplot(diabetes_clean,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE) + ggtitle("Clean Data: Age")
 
-age_raw_plot <- ggplot(diabetes_data,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE)
+age_raw_plot <- ggplot(diabetes_data,aes(age,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE) + ggtitle("Raw Data: Age")
 
 grid.arrange(insulin_raw_plot,insulin_clean_plot,nrow=1)
 grid.arrange(age_raw_plot,age_clean_plot,nrow=1)
@@ -102,11 +102,14 @@ misclass[i] <- mean(my.classification!=diabetes_clean$diabetes)
 #Find threshold which minimizes miclassification
 cutoff <- thresh[which.min(misclass)]
 
-plot(thresh, misclass, pch = 19)
+?plot()
+plot(thresh, misclass, pch = 19, main = "Minimized Misclassification")
+abline(v = cutoff, col = "red")
 ```
 
+The appropriate threshold for classification that minimizes the misclassification is `r round(cutoff,4)`. When looking at the graph "Minimized Misclassification", 100 misclassification values between 0 and 1 were calculated. The vertical red line represents the minimum threshold.
 
-7. Assess the model fit by build a confusion matrix from all the data (i.e. not cross-validated) using the classification threshold that you found in the previous problem, report the pseudo-R2 and AUC for your logistic regression model. Comment on how well your model fits the data by its ability to correctly classify patients in the dataset. State your results in terms of sensitivity, specificity, positive predictive value and negative predictive value.
+7. 
 
 ```{r, echo = FALSE}
 ## Use fitted model to predict
@@ -150,7 +153,7 @@ As for the area under our Receiver Characteristic Operator curve, we obatin a va
 
 From the data, we obtain a sensitivity value of `r round(mean(SENS),4)`, a specitivity value of `r round(mean(SPEC), 4)`, a positive predictive value of `r round(mean(PPV),4)`, and a negative predictive value of `r round(mean(NPV),4)`. This means we correctly identified `r 100*round(mean(SENS),4)` percent of people that actually had diabetes and `r 100*round(mean(SPEC),4)` percent of people that did not have diabetes. Of those that we predicted to have diabetes, `r 100*round(mean(PPV),4)` actually had diabetes and of those that we predicted to not have diabetes, `r 100*round(mean(NPV),4)` percent of them did not actually have diabetes. These are all fairly high percentages which would allows us to conclude that this model fits the data well. The one concern is the sensitivity which would be better it if were a little higher. It's better that we over diagnose people with diabetes, so that the likelihood of those that do have diabetes test positive. 
 
-8. Assess the predictive ability of your model by running a cross-validation study where you classify the “test” patients using the threshold you found above. Report your results in terms of the average sensitivity, specificity, positive predictive value and negative predictive value for the test sets.
+8. 
 
 ```{r, echo = FALSE}
 n.cv <- 500
@@ -197,10 +200,9 @@ mean(ppv)
 mean(npv)
 ```
 
-When running a cross validation on the data, we obtain a sensitivity value of `r round(mean(sens),4)`, a specitivity value of `r round(mean(spec), 4)`, a positive predictive value of `r round(mean(ppv),4)`, and a negative predictive value of `r round(mean(npv),4)`.
-something
+When running a cross validation on the data, we obtain a sensitivity value of `r round(mean(sens),4)`, a specitivity value of `r round(mean(spec), 4)`, a positive predictive value of `r round(mean(ppv),4)`, and a negative predictive value of `r round(mean(npv),4)`. This means we correctly identified `r 100*round(mean(sens),4)` percent of people that actually had diabetes and `r 100*round(mean(spec),4)` percent of people that did not have diabetes. Of those that we predicted to have diabetes, `r 100*round(mean(ppv),4)` actually had diabetes and of those that we predicted to not have diabetes, `r 100*round(mean(npv),4)` percent of them did not actually have diabetes. These are all fairly high percentages which would allows us to conclude that this model is farly good at predicting. Once again, the only slightly worrisome percentage is the sensitivity which would be better if it were a little higher. 
 
-9. Predict the probability of diabetes for the following patient: pregnant= 1, glucose= 90, diastolic= 62, triceps= 18, insulin= 59, bmi= 25.1, pedigree= 1.268 and age= 25. Do you think patient has diabetes? Why or why not?
+9.
 
 ```{r, echo = FALSE}
 dframe <- data.frame( glucose= 90, bmi= 25.1, pedigree= 1.268, age= 25)
