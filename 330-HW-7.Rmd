@@ -39,11 +39,12 @@ diabetes_clean <- diabetes_age[-which(diabetes_age$age == 81),]
 ```
 
 
-1. In your own words, summarize the overarching problem. Discuss how statistical modeling will be able to answer the posed questions.
+1. 
 
 Type 2 Diabetes is connected to various health problems.  Being able to detect diabetes early can help manage and prevent those health problems.  Doctors would like to be able to understand how various physical factors such as bmi and age impact the likelihood a person has diabetes.  This would allow them to better identify patients who truly have diabetes and help them alleviate and/or prevent health complications associated with type 2 diabetes.
 
-2. Explore the data using basic exploratory graphics and summary statistics. Include scatterplots with smooth curves to show the relationship between 2 covariates and the response (diabetes). Comment on any potential relationships you see through this exploratory analysis. Explain why traditional multiple linear regression methods are not suitable for this problem.
+2. 
+
 ```{r, echo = FALSE, message = FALSE}
 insulin_clean_plot <- ggplot(diabetes_clean,aes(insulin,diabetes)) + geom_jitter(height = 0.1) + geom_smooth(se=FALSE) + ggtitle("Clean Data: Insulin")
 
@@ -57,13 +58,13 @@ grid.arrange(insulin_raw_plot,insulin_clean_plot,nrow=1)
 grid.arrange(age_raw_plot,age_clean_plot,nrow=1)
 ```
 
-The data we received has some errors in it we needed to fix.  These included patients who had a recorded bmi of 0 as well as insulin levels recorded at 0.  We also removed the patient with an age of 81 because it was a severe outlier that heavily affected monotonality. While not perfectly monotonic, with the removal of the age 81 patient, the data is mostly monotonic and is enough so to justify doing logistic regression.
+The data we received has some errors in it we needed to fix.  All patients who had a recorded bmi of 0 or insulin levels recorded at 0 were removed.  We also removed the patient with an age of 81 because it was a severe outlier that heavily affected monotonality. While not perfectly monotonic, with the removal of the age 81 patient, the data is mostly monotonic and is enough so to justify doing logistic regression.
 
-Multiple linear regression is not a valid method for this data because the response variable is in terms of 'yes' or 'no' rather than numeric values.  As such we logistic regression fits better because it is for dealing with 'yes' or 'no' response variables and the probability associated with predicting this type of response.
+Multiple linear regression is not a valid method for this data because the response variable is in terms of 'yes' or 'no' rather than numeric values. When reading yes's and no's as 1's and 0's respectively, our predictions won't always be 1's and zero's. Many of the assumptions such as linearity, normality, and equal variance are likely to be violted. As such we logistic regression fits better because it is for dealing with 'yes' or 'no' response variables and the probability associated with predicting this type of response.
 
 
 
-3. Use variable selection to choose which variables to use in a logistic regression model for diabetes. Provide a justification of your choice in criteria (AIC or BIC) and algorithm (forward vs. backward vs. exhaustive). What factors do you find are important in explaining the presence of diabetes?
+3. 
 
 ```{r, echo = FALSE, fig.height = 3, fig.width = 3}
 vs.res <- bestglm(diabetes_clean, IC = "BIC", method = "exhaustive", family = binomial)
@@ -77,12 +78,13 @@ ylab="BIC")
 
 We decided to use BIC because we wanted more focus on interpreting the factors that influence the likelihood a person has diabetes.  The algorithm we chose was exhaustive because there aren't that many factors in the data so we can test every possible model to determine the best one.  Using this method we found the most important variables to be glucose, bmi, pedigree, and age.
 
-4. Write out a logistic regression model (using greek letters) that includes your chosen covariates. Describe and justify any assumptions that you use in writing out your model.
+4.
 
 $$log(\frac{p_i}{1+p_i}) = \beta_0 + \beta_1(glucose_i) + \beta_2(bmi_i) + \beta_3(pedigree_i) +\beta_4(age_i)$$
-For this model to work, we assume linear probability and independence.  Becuase the data was mostly montonic, we can assume linear probability.  We can also assume independence because one person having diabetes should not influence the chance that another random person has diabetes.
 
-5. Fit the corresponding logistic regression model and give a 95% confidence interval for each effect therein. Interpret at least one (but not the intercept) of these intervals in the context of the problem.
+For this model to work, we assume linear probability and independence.  Becuase the data was mostly montonic, we can assume linear probability.  We can also assume independence because one person having diabetes should not influence the chance that another random person has diabetes unless they're related. We will assume in this case that most of the people whose data we used aren't related.
+
+5. 
 
 ```{r, collapse=TRUE , }
 log.odds <- confint(best_slr) %>% as.data.frame(.) ##log-odds
@@ -110,9 +112,9 @@ knitr::kable(times, align = "c",format = "markdown",digits = 5 )
 knitr::kable(percentage, align = "c",format = "markdown",digits = 5)
 ```
 
-Looking at the table for Percentage 95% Confidence Interval, we can see that the interval for age is between `r percentage[5,1]` and `r percentage[5,2]` this means that as age goes up by 1, holding all else constant, the true increase in the chance of having diabetes goes up between `r percentage[5,1]`% and `r percentage[5,2]`%
+Looking at the table for Percentage 95% Confidence Interval, we can see that the interval for age is between `r percentage[5,1]` and `r percentage[5,2]`. This means that as age goes up by 1, holding all else constant, a person's chance of having diabetes goes up between `r percentage[5,1]`% and `r percentage[5,2]`%
 
-6. Determine an appropriate threshold for classification that minimizes the misclassification rate. Provide an appropriate plot showing that this is indeed the minimum.
+6. 
 
 ```{r, echo = FALSE}
 pred.probs <- predict.glm(best_slr, type = "response")
